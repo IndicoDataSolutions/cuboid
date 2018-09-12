@@ -83,6 +83,7 @@ class Convolutional(Initializable):
     def __init__(self, input_dim, num_filters, filter_size, pad=(1, 1),
                  stride=(1, 1), **kwargs):
         super(Convolutional, self).__init__(**kwargs)
+        self.use_bias = getattr(self, "use_bias", "False")
         self.input_dim = input_dim
         self.num_filters = num_filters
         self.filter_size = filter_size
@@ -141,7 +142,7 @@ class Convolutional(Initializable):
                 kshape = (self.num_filters, 'x', self.filter_size[0], self.filter_size[1])
                 border_mode = self.pad
                 subsample = self.stride
-                oshape = GpuDnnConv.get_out_shape(ishape, kshape, border_mode, subsample)
+                oshape = GpuDnnConv.get_out_shape(ishape, kshape, border_mode, subsample, None)
                 return (oshape[1], oshape[2], oshape[3])
             else:
                 # TODO manage the case where either input_dim[{1, 2}] is not a str
