@@ -10,14 +10,14 @@ from blocks.utils import shared_floatx_zeros, pack, shared_floatx_nans
 from blocks.config import config
 from blocks.roles import add_role, PARAMETER, FILTER, BIAS, WEIGHT
 import collections
-from theano.sandbox.cuda.basic_ops import gpu_contiguous, gpu_alloc_empty
-from theano.sandbox.cuda.dnn import GpuDnnConvDesc, GpuDnnConvGradI
+from theano.gpuarray.basic_ops import GpuContiguous, GpuAllocEmpty
+from theano.gpuarray.dnn import GpuDnnConvDesc, GpuDnnConvGradI
 
 import theano
 from theano import tensor as T
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from theano.sandbox.cuda.dnn import dnn_conv, GpuDnnConv, dnn_pool
+from theano.gpuarray.dnn import dnn_conv, GpuDnnConv, dnn_pool
 
 import numpy as np
 
@@ -278,7 +278,6 @@ class DefaultsSequence(FeedforwardSequence, Initializable):
     def _push_allocation_config(self):
         input_dim = self.input_dim
         for brick, application_method in zip(self.children, self.application_methods):
-            print input_dim, brick.name
             # hack as Activations don't have get_dim
             if not isinstance(brick, Activation) and not isinstance(brick, BlocksSoftmax)\
                and not isinstance(brick, Softmax):
@@ -492,15 +491,15 @@ class Deconvolutional(Convolutional):
         else:
             W, = self.parameters
         W = W.dimshuffle(1, 0, 2, 3)
-        img = gpu_contiguous(input_)
-        kerns = gpu_contiguous(W)
+        img = GpuContiguous(input_)
+        kerns = GpuContiguous(W)
         desc = GpuDnnConvDesc(border_mode=self.pad, subsample=self.stride,
-                              conv_mode='conv')(gpu_alloc_empty(img.shape[0],
+                              conv_mode='conv')(GpuAllocEmpty(img.shape[0],
                                                                 kerns.shape[1],
                                                                 img.shape[2]*self.stride[0],
                                                                 img.shape[3]*self.stride[1]).shape,
                                                 kerns.shape)
-        out = gpu_alloc_empty(img.shape[0], kerns.shape[1],
+        out = GpuAllocEmpty(img.shape[0], kerns.shape[1],
                               img.shape[2]*self.stride[0],
                               img.shape[3]*self.stride[1])
         output = GpuDnnConvGradI()(kerns, img, out, desc)
